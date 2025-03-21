@@ -5,7 +5,24 @@ import time
 from pyvis.network import Network
 
 # Configuration test
-TMDB_API_KEY = st.secrets["TMDB_API_KEY"]  # Store your API key in Streamlit secrets
+# More robust way to get API key
+import os
+
+# Try to get API key from multiple sources
+try:
+    TMDB_API_KEY = st.secrets["TMDB_API_KEY"]
+except KeyError:
+    # If not in secrets, try environment variable
+    TMDB_API_KEY = os.environ.get("TMDB_API_KEY")
+    
+    # If still not found, provide a text input for user
+    if not TMDB_API_KEY:
+        st.warning("TMDB API key not found in secrets or environment variables.")
+        TMDB_API_KEY = st.text_input("Please enter your TMDB API key:", type="password")
+        
+        if not TMDB_API_KEY:
+            st.error("An API key is required to use this application.")
+            st.stop()
 BASE_URL = "https://api.themoviedb.org/3"
 
 # Set page config
