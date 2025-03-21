@@ -4,7 +4,7 @@ import requests
 import time
 from pyvis.network import Network
 
-# Configuration
+# Configuration test
 TMDB_API_KEY = st.secrets["TMDB_API_KEY"]  # Store your API key in Streamlit secrets
 BASE_URL = "https://api.themoviedb.org/3"
 
