@@ -14,6 +14,8 @@ st.set_page_config(
 
 # Hardcoded API key (for development only)
 TMDB_API_KEY = "b91a0fbde9fc501f2b98a260f47ccceb"  # Replace with your actual TMDB API key
+# API base URL
+BASE_URL = "https://api.tmdb.org/3"
 
 # App title and description
 st.title("🎬 Six Degrees of Hollywood")
