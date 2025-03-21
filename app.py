@@ -66,11 +66,41 @@ def get_movie_cast(movie_id):
     
     return data.get("cast", [])
 
+@st.cache_data(ttl=3600)
+def get_movie_details(movie_id):
+    """Get details about a movie"""
+    url = f"{BASE_URL}/movie/{movie_id}"
+    params = {
+        "api_key": TMDB_API_KEY,
+        "language": "en-US"
+    }
+    response = requests.get(url, params=params)
+    return response.json()
+
 def build_actor_graph(start_actor_id, max_depth=2, max_movies_per_actor=5):
     """Build a graph of connected actors starting from a given actor"""
     G = nx.Graph()
     visited_actors = set()
     visited_movies = set()
+    
+    # Add starting actor to graph
+    actor_movies = get_actor_movies(start_actor_id)
+    start_actor_data = None
+    for movie in actor_movies:
+        if not start_actor_data and movie.get("cast"):
+            for cast_member in movie.get("cast", []):
+                if cast_member["id"] == start_actor_id:
+                    start_actor_data = cast_member
+                    break
+    
+    # If we still don't have the actor data, use a placeholder
+    if not start_actor_data:
+        start_actor_data = {"id": start_actor_id, "name": f"Actor {start_actor_id}", "profile_path": None}
+    
+    # Add starting actor to the graph
+    profile_path = start_actor_data.get("profile_path")
+    image_url = f"https://image.tmdb.org/t/p/w185{profile_path}" if profile_path else ""
+    G.add_node(start_actor_id, name=start_actor_data.get("name", f"Actor {start_actor_id}"), image=image_url)
     
     # Queue for BFS traversal: (actor_id, depth)
     queue = [(start_actor_id, 0)]
@@ -136,77 +166,61 @@ def find_actor_connection(actor1_id, actor2_id):
     # Build graph starting from the first actor
     G = build_actor_graph(actor1_id, max_depth=2, max_movies_per_actor=5)
     
-    # Check if the second actor is in the graph
-    if not G.has_node(actor2_id):
-        # If not, build graph from second actor and combine
+    # First check if second actor is in the graph
+    if actor2_id not in G:
+        # If not, build a graph from the second actor
         G2 = build_actor_graph(actor2_id, max_depth=2, max_movies_per_actor=5)
         
-        # Combine the two graphs
+        # Merge the graphs
         G = nx.compose(G, G2)
         
-        # Additional debug info
-        st.info(f"Built separate graphs with {len(G.nodes)} total actors.")
+        # Find common movies between actors in both parts of the graph
+        st.info(f"Building bridge connections between the actor networks...")
         
-        # If after combining graphs, there's still no path, we need to add some connections
-        if not nx.has_path(G, actor1_id, actor2_id):
-            st.info("No direct path found. Trying to build a bridge between networks...")
+        # Get potential bridge actors (from first graph)
+        actor1_neighbors = set(G.neighbors(actor1_id))
+        # Get potential bridge actors (from second graph)
+        actor2_neighbors = set(G.neighbors(actor2_id))
+        
+        # Try to find connections between these two neighborhoods
+        bridges_created = 0
+        for a1 in list(actor1_neighbors)[:10]:  # Limit to 10 neighbors
+            movies1 = get_actor_movies(a1)
+            movie_ids1 = {m["id"] for m in movies1[:10]}  # Top 10 movies
             
-            # Try to find potential bridge actors (in both graphs)
-            common_movies = set()
-            for actor_id in G.nodes():
-                if actor_id == actor1_id or actor_id == actor2_id:
-                    continue
+            for a2 in list(actor2_neighbors)[:10]:  # Limit to 10 neighbors
+                movies2 = get_actor_movies(a2)
+                movie_ids2 = {m["id"] for m in movies2[:10]}  # Top 10 movies
+                
+                # Find common movies
+                common_movies = movie_ids1.intersection(movie_ids2)
+                
+                for movie_id in common_movies:
+                    # Get movie details
+                    movie_details = get_movie_details(movie_id)
+                    movie_title = movie_details.get("title", f"Movie {movie_id}")
                     
-                # Get this actor's movies
-                movies = get_actor_movies(actor_id)
-                for movie in movies:
-                    common_movies.add(movie["id"])
-                    
-                # Limit to prevent too many API calls
-                if len(common_movies) > 20:
+                    # Add direct connections
+                    if not G.has_edge(a1, a2):
+                        G.add_edge(a1, a2, movies=[movie_title])
+                        bridges_created += 1
+                
+                # Limit the number of bridges we create
+                if bridges_created >= 20:
                     break
             
-            # For each movie, check if it can create a connection
-            bridges_created = 0
-            for movie_id in list(common_movies)[:10]:  # Limit to 10 movies
-                cast = get_movie_cast(movie_id)
-                movie_data = None
-                
-                # Get actors in this movie
-                movie_actors = []
-                for cast_member in cast[:15]:  # Limit to top 15 cast
-                    cast_id = cast_member["id"]
-                    if G.has_node(cast_id):
-                        movie_actors.append(cast_id)
-                        
-                        # Get movie data if we haven't yet
-                        if not movie_data:
-                            url = f"{BASE_URL}/movie/{movie_id}"
-                            params = {"api_key": TMDB_API_KEY, "language": "en-US"}
-                            response = requests.get(url, params=params)
-                            movie_data = response.json()
-                
-                # Add edges between actors in this movie
-                movie_title = movie_data["title"] if movie_data else f"Movie {movie_id}"
-                for i in range(len(movie_actors)):
-                    for j in range(i+1, len(movie_actors)):
-                        actor_i = movie_actors[i]
-                        actor_j = movie_actors[j]
-                        
-                        if not G.has_edge(actor_i, actor_j):
-                            G.add_edge(actor_i, actor_j, movies=[movie_title])
-                            bridges_created += 1
-                
-                # Stop if we've created enough bridges
-                if bridges_created >= 15:
-                    break
-                    
-            st.info(f"Created {bridges_created} additional connections to bridge the networks.")
+            if bridges_created >= 20:
+                break
+        
+        st.info(f"Created {bridges_created} bridge connections between the networks.")
     
     # Find shortest path if it exists
     try:
-        path = nx.shortest_path(G, actor1_id, actor2_id)
-        return G, path
+        if actor1_id in G and actor2_id in G:
+            path = nx.shortest_path(G, actor1_id, actor2_id)
+            return G, path
+        else:
+            return G, None
     except nx.NetworkXNoPath:
         return G, None
 
