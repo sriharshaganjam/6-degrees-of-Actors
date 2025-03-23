@@ -2,7 +2,7 @@ import streamlit as st
 import networkx as nx
 import requests
 import time
-from pyvis.network import Network
+import matplotlib.pyplot as plt
 import os
 
 # Set page config must be the first streamlit command
@@ -224,67 +224,44 @@ def find_actor_connection(actor1_id, actor2_id):
     except nx.NetworkXNoPath:
         return G, None
 
-def visualize_path(G, path):
-    """Create a visualization of the connection path"""
-    # Create a subgraph only containing the path
+def visualize_path_simple(G, path):
+    """Create a simple visualization of the connection path using matplotlib"""
     if path:
-        # Create a PyVis network with specific configuration
-        net = Network(height="600px", width="100%", bgcolor="#222222", font_color="white", directed=False)
-        net.toggle_physics(True)  # Enable physics for better layout
-        
-        # Add nodes and edges from the path
-        for node in path:
-            label = G.nodes[node]["name"]
-            image = G.nodes[node]["image"] if G.nodes[node]["image"] else None
-            
-            # Add the node with proper configuration
-            net.add_node(
-                node, 
-                label=label,
-                title=label,  # Tooltip on hover
-                image=image,
-                shape="circularImage" if image else "dot",
-                size=40,
-                borderWidth=2,
-                borderWidthSelected=4,
-                color={'background': '#3498db', 'border': '#2980b9'}
-            )
-        
-        # Add the connections with movie information
+        # Create a subgraph with just the path
         path_edges = [(path[i], path[i+1]) for i in range(len(path)-1)]
-        for edge in path_edges:
-            movies = G[edge[0]][edge[1]]["movies"]
-            movie_titles = ", ".join(movies[:3])
-            if len(movies) > 3:
-                movie_titles += f" and {len(movies) - 3} more"
-            
-            # Add edge with proper styling
-            net.add_edge(
-                edge[0], 
-                edge[1], 
-                title=movie_titles,
-                width=3,
-                color="#e74c3c"
-            )
+        H = nx.Graph()
         
-        # Save the graph to a temporary file
-        try:
-            # Create a temp directory if it doesn't exist
-            if not os.path.exists('temp'):
-                os.makedirs('temp')
-                
-            # Save the graph
-            graph_path = os.path.join('temp', 'actor_connection_graph.html')
-            net.save_graph(graph_path)
-            
-            # Read the HTML content
-            with open(graph_path, 'r', encoding='utf-8') as f:
-                html_content = f.read()
-                
-            return html_content
-        except Exception as e:
-            st.error(f"Error creating visualization: {e}")
-            return None
+        # Add nodes and edges
+        for i, node in enumerate(path):
+            H.add_node(node, name=G.nodes[node]["name"])
+        
+        for i in range(len(path)-1):
+            H.add_edge(path[i], path[i+1])
+        
+        # Create the plot
+        plt.figure(figsize=(10, 6))
+        pos = nx.spring_layout(H, seed=42)  # For consistent layout
+        
+        # Draw the network
+        nx.draw(H, pos, with_labels=False, node_color='skyblue', 
+                node_size=1500, edge_color='gray', linewidths=2, font_size=10)
+        
+        # Add labels with actor names
+        labels = {node: G.nodes[node]["name"] for node in H.nodes()}
+        nx.draw_networkx_labels(H, pos, labels=labels)
+        
+        # Add edge labels with movie names
+        edge_labels = {}
+        for i in range(len(path)-1):
+            edge_labels[(path[i], path[i+1])] = G[path[i]][path[i+1]]["movies"][0]
+        
+        nx.draw_networkx_edge_labels(H, pos, edge_labels=edge_labels, font_size=8)
+        
+        # Remove axis
+        plt.axis('off')
+        
+        # Return the figure
+        return plt
     return None
 
 # User interface
@@ -337,11 +314,11 @@ if st.button("Find Connection"):
                 
                 st.write(f"{current_actor} → {next_actor} via '{movies[0]}'")
             
-            # Display interactive graph
-            html_content = visualize_path(G, path)
-            if html_content:
-                st.subheader("Interactive Visualization:")
-                st.components.v1.html(html_content, height=600)
+            # Display simple visualization
+            st.subheader("Connection Visualization:")
+            plt_fig = visualize_path_simple(G, path)
+            if plt_fig:
+                st.pyplot(plt_fig)
         else:
             st.error(f"No connection found between {actor1['name']} and {actor2['name']} within the search depth.")
             st.info("Try increasing the search depth or choose different actors.")
