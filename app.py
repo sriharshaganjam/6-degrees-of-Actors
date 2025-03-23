@@ -299,7 +299,9 @@ if st.button("Find Connection"):
         
         # Find connection
         with st.spinner("Finding connection..."):
-            G, path = find_actor_connection(actor1["id"], actor2["id"])
+            G, path = find_actor_connection(actor1["id"], actor2["id"], 
+                                   actor1_name=actor1["name"], 
+                                   actor2_name=actor2["name"])
         
         if path:
             st.success(f"Found a connection with {len(path)-1} degrees of separation!")
