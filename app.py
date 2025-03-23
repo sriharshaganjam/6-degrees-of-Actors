@@ -169,8 +169,15 @@ def find_actor_connection(actor1_id, actor2_id, actor1_name=None, actor2_name=No
     # Explicitly set actor names if provided
     if actor1_name and actor1_id in G.nodes:
         G.nodes[actor1_id]['name'] = actor1_name
-    if actor2_name and actor2_id in G.nodes:
-        G.nodes[actor2_id]['name'] = actor2_name        
+        
+    # First check if second actor is in the graph
+    if actor2_id not in G:
+        # If not, build a graph from the second actor
+        G2 = build_actor_graph(actor2_id, max_depth=2, max_movies_per_actor=5)
+        
+        # Set actor2 name in G2 if provided
+        if actor2_name and actor2_id in G2.nodes:
+            G2.nodes[actor2_id]['name'] = actor2_name 
         # Merge the graphs
         G = nx.compose(G, G2)
         
@@ -300,8 +307,8 @@ if st.button("Find Connection"):
         # Find connection
         with st.spinner("Finding connection..."):
             G, path = find_actor_connection(actor1["id"], actor2["id"], 
-                                   actor1_name=actor1["name"], 
-                                   actor2_name=actor2["name"])
+                                  actor1_name=actor1["name"], 
+                                  actor2_name=actor2["name"])
         
         if path:
             st.success(f"Found a connection with {len(path)-1} degrees of separation!")
