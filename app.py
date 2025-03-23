@@ -161,16 +161,16 @@ def build_actor_graph(start_actor_id, max_depth=2, max_movies_per_actor=5):
     
     return G
 
-def find_actor_connection(actor1_id, actor2_id):
+def find_actor_connection(actor1_id, actor2_id, actor1_name=None, actor2_name=None):
     """Find the shortest path connecting two actors"""
     # Build graph starting from the first actor
     G = build_actor_graph(actor1_id, max_depth=2, max_movies_per_actor=5)
     
-    # First check if second actor is in the graph
-    if actor2_id not in G:
-        # If not, build a graph from the second actor
-        G2 = build_actor_graph(actor2_id, max_depth=2, max_movies_per_actor=5)
-        
+    # Explicitly set actor names if provided
+    if actor1_name and actor1_id in G.nodes:
+        G.nodes[actor1_id]['name'] = actor1_name
+    if actor2_name and actor2_id in G.nodes:
+        G.nodes[actor2_id]['name'] = actor2_name        
         # Merge the graphs
         G = nx.compose(G, G2)
         
