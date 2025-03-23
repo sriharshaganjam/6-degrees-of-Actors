@@ -18,7 +18,7 @@ TMDB_API_KEY = "b91a0fbde9fc501f2b98a260f47ccceb"  # Replace with your actual TM
 BASE_URL = "https://api.tmdb.org/3"
 
 # App title and description
-st.title("🎬 Six Degrees of Hollywood")
+st.title("🎬 Six Degrees of Filmiwood")
 st.subheader("Find connections between actors through their movie collaborations")
 
 # Cache API requests to improve performance
@@ -276,10 +276,10 @@ with st.container():
     col1, col2 = st.columns(2)
     
     with col1:
-        actor1_name = st.text_input("Enter first actor's name", "Tom Hanks")
+        actor1_name = st.text_input("Enter first actor's name", "Brad Pitt")
     
     with col2:
-        actor2_name = st.text_input("Enter second actor's name", "Kevin Bacon")
+        actor2_name = st.text_input("Enter second actor's name", "Amitabh Bachchan")
 
 if st.button("Find Connection"):
     # Search for actors
@@ -357,7 +357,7 @@ with st.sidebar:
     st.header("Sample Connections")
     st.markdown("""
     Try these pairs:
-    - Tom Hanks → Kevin Bacon
-    - Meryl Streep → Brad Pitt  
+    - Puneeth Rajkumar → Tom Cruise
+    - Brad Pitt → Amitabh Bachchan  
     - Leonardo DiCaprio → Emma Stone
     """)
