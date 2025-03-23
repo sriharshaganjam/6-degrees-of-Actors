@@ -20,7 +20,7 @@ BASE_URL = "https://api.tmdb.org/3"
 # App title and description
 st.title("🎬 Six Degrees of Actors")
 st.subheader("Find connections between actors through their movie collaborations")
-st.markdown("The 'six degrees of separation' theory suggests that any two random people can be connected together in no more than six links. Let's see if this is true by linking random Actors together!")
+st.markdown("The 'Six Degrees of Separation' theory suggests that any two random people can be connected together in no more than six links. Let's see if this is true by linking random Actors together!")
 
 # Cache API requests to improve performance
 @st.cache_data(ttl=3600)
