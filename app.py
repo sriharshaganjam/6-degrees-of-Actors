@@ -279,7 +279,7 @@ with st.container():
         actor1_name = st.text_input("Enter first actor's name", "Brad Pitt")
     
     with col2:
-        actor2_name = st.text_input("Enter second actor's name", "Amitabh Bachchan")
+        actor2_name = st.text_input("Enter second actor's name", "Puneeth Rajkumar")
 
 if st.button("Find Connection"):
     # Search for actors
