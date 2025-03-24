@@ -123,7 +123,7 @@ def build_actor_graph(start_actor_id, max_depth=2, max_movies_per_actor=5):
             movies = get_actor_movies(actor_id)
             
             # Sort by popularity and take top N
-            movies = sorted(movies, key=lambda x: x.get("popularity", 0), reverse=True)[:10]
+            movies = sorted(movies, key=lambda x: x.get("popularity", 0), reverse=True)[:max_movies_per_actor]
             
             for movie in movies:
                 movie_id = movie["id"]
@@ -165,7 +165,7 @@ def build_actor_graph(start_actor_id, max_depth=2, max_movies_per_actor=5):
 def find_actor_connection(actor1_id, actor2_id, actor1_name=None, actor2_name=None):
     """Find the shortest path connecting two actors"""
     # Build graph starting from the first actor
-    G = build_actor_graph(actor1_id, max_depth=3, max_movies_per_actor=5)
+    G = build_actor_graph(actor1_id, max_depth=2, max_movies_per_actor=5)
     
     # Explicitly set actor names if provided
     if actor1_name and actor1_id in G.nodes:
