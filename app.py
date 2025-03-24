@@ -192,13 +192,13 @@ def find_actor_connection(actor1_id, actor2_id, actor1_name=None, actor2_name=No
         
         # Try to find connections between these two neighborhoods
         bridges_created = 0
-        for a1 in list(actor1_neighbors)[:15]:  # Limit to 10 neighbors
+        for a1 in list(actor1_neighbors)[:10]:  # Limit to 10 neighbors
             movies1 = get_actor_movies(a1)
-            movie_ids1 = {m["id"] for m in movies1[:15]}  # Top 10 movies
+            movie_ids1 = {m["id"] for m in movies1[:10]}  # Top 10 movies
             
-            for a2 in list(actor2_neighbors)[:15]:  # Limit to 10 neighbors
+            for a2 in list(actor2_neighbors)[:10]:  # Limit to 10 neighbors
                 movies2 = get_actor_movies(a2)
-                movie_ids2 = {m["id"] for m in movies2[:15]}  # Top 10 movies
+                movie_ids2 = {m["id"] for m in movies2[:10]}  # Top 10 movies
                 
                 # Find common movies
                 common_movies = movie_ids1.intersection(movie_ids2)
@@ -214,10 +214,10 @@ def find_actor_connection(actor1_id, actor2_id, actor1_name=None, actor2_name=No
                         bridges_created += 1
                 
                 # Limit the number of bridges we create
-                if bridges_created >= 30:
+                if bridges_created >= 20:
                     break
             
-            if bridges_created >= 30:
+            if bridges_created >= 20:
                 break
         
         st.info(f"Created {bridges_created} bridge connections between the networks.")
